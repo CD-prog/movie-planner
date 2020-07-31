@@ -4,9 +4,11 @@ var mysql = require("mysql");
 
 var app = express();
 
+// Set the port of our application
+// process.env.PORT lets the port be set by Heroku
 var PORT = process.env.PORT || 8080;
 
-
+// Parse request body as JSON
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -17,7 +19,7 @@ var connection = mysql.createConnection({
   host: "localhost",
   port: 3306,
   user: "root",
-  password: "Claudiu_39",
+  password: "root",
   database: "movie_planner_db"
 });
 
@@ -27,9 +29,47 @@ connection.connect(function(err) {
     return;
   }
 
-  console.log("connected on port " + connection.threadId);
+  console.log("connected as id " + connection.threadId);
 });
-app.listen(PORT, function() {
 
-    console.log("Server listening on: http://localhost:" + PORT);
-  });
+// VIEW ROUTE
+app.get('/', (req, res) => {
+  connection.query('SELECT * FROM movies', (err, data) => {
+    res.render('index', { movies: data })
+  })
+})
+
+// API ROUTES
+
+// POST
+app.post('/api/movies', (req, res) => {
+  const newMovieText = req.body.newMovieText
+  // insert into database
+  connection.query('INSERT INTO movies (movie) VALUES (?)', [newMovieText], (err, response) => {
+    if (err) throw err
+    // redirect to home route
+    res.status(200).send()
+  })
+})
+
+// PUT
+app.put('/api/movies/:id', (req, res) => {
+  const id = req.params.id
+  const updatedMovieText = req.body.updatedMovieText
+  connection.query('UPDATE movies SET movie = ? WHERE id = ?', [updatedMovieText, id], (err, result) => {
+    if(err) throw err
+    res.status(200).send()
+  })
+})
+
+// DELETE
+app.delete('/api/movies/:id', (req, res) => {
+  const id = req.params.id
+  connection.query('DELETE FROM movies WHERE ?', { id }, (err, result) => {
+    if (err) throw err
+    // redirect to home route
+    res.status(200).send()
+  })
+})
+
+app.listen(PORT, () => console.log(`Server listening at http://localhost:${PORT}`))
